@@ -154,6 +154,10 @@ pub async fn list_network_interfaces() -> Json<Vec<NetworkInterfaceInfo>> {
     Json(crate::commands::vpn::build_interface_list())
 }
 
+pub async fn file_associations_supported() -> Json<bool> {
+    Json(crate::file_assoc::file_associations_supported())
+}
+
 pub async fn get_settings(State(state): State<WebState>) -> Json<Settings> {
     Json(state.settings.get().await)
 }
@@ -163,6 +167,7 @@ pub async fn set_settings(
     Json(settings): Json<Settings>,
 ) -> Result<StatusCode, ApiErr> {
     crate::commands::settings::apply_settings(
+        &state.app,
         &state.api,
         &state.settings,
         &state.portmap,

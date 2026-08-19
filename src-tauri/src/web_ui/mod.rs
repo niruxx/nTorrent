@@ -32,6 +32,7 @@ pub struct WebState {
     pub portmap: Arc<PortMapManager>,
     pub web_ui: Arc<WebUiHandle>,
     pub stats_tx: broadcast::Sender<Arc<TorrentListResponse>>,
+    pub app: tauri::AppHandle,
 }
 
 #[derive(Default)]
@@ -97,6 +98,7 @@ fn build_router(state: WebState) -> Router {
         .route("/vpn/status", get(handlers::get_portmap_status))
         .route("/vpn/refresh", post(handlers::refresh_portmap))
         .route("/network/interfaces", get(handlers::list_network_interfaces))
+        .route("/file-associations/supported", get(handlers::file_associations_supported))
         .route("/settings", get(handlers::get_settings).put(handlers::set_settings))
         .route("/whoami", get(handlers::whoami))
         .route("/ws", get(ws::ws_handler))

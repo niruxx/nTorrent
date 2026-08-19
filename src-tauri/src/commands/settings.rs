@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use librqbit::Api;
 use librqbit::api::TorrentListResponse;
-use tauri::State;
+use tauri::{AppHandle, State};
 use tokio::sync::broadcast;
 
+use crate::file_assoc;
 use crate::portmap::manager::PortMapManager;
 use crate::portmap::pia::PiaConfig;
 use crate::scheduler;
@@ -18,8 +19,13 @@ pub async fn get_settings(state: State<'_, AppState>) -> Result<Settings, String
 }
 
 #[tauri::command]
-pub async fn set_settings(state: State<'_, AppState>, settings: Settings) -> Result<(), String> {
+pub async fn set_settings(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    settings: Settings,
+) -> Result<(), String> {
     apply_settings(
+        &app,
         &state.api,
         &state.settings,
         &state.portmap,
@@ -35,6 +41,7 @@ pub async fn set_settings(state: State<'_, AppState>, settings: Settings) -> Res
 /// the web UI. Shared by the Tauri command and the web UI's own HTTP
 /// handler (so saving Settings from a browser behaves identically).
 pub async fn apply_settings(
+    app: &AppHandle,
     api: &Api,
     settings_store: &Arc<SettingsStore>,
     portmap: &Arc<PortMapManager>,
@@ -50,6 +57,8 @@ pub async fn apply_settings(
         .set(settings.clone())
         .await
         .map_err(|e| e.to_string())?;
+
+    file_assoc::apply(app, settings.file_associations_enabled);
 
     scheduler::apply_current_limits(api, settings_store).await;
 
@@ -86,6 +95,7 @@ pub async fn apply_settings(
                 portmap: portmap.clone(),
                 web_ui: web_ui.clone(),
                 stats_tx: stats_tx.clone(),
+                app: app.clone(),
             };
             web_ui.start(web_state, bind_all, port).await.map_err(|e| e.to_string())?;
         } else {

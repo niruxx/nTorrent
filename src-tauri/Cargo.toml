@@ -40,4 +40,10 @@ axum = { version = "0.8.9", features = ["ws"] }
 rust-embed = "8.12.0"
 mime_guess = "2.0.5"
 rand = "0.10.2"
+tauri-plugin-single-instance = { version = "2.4.3", features = ["deep-link"] }
+tauri-plugin-deep-link = "2.4.9"
+
+[target."cfg(windows)".dependencies]
+dunce = "1.0.5"
+winreg = "0.56.0"
 

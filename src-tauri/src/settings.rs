@@ -70,6 +70,10 @@ pub struct Settings {
     /// fresh install; the frontend shows the onboarding flow until this
     /// becomes true.
     pub onboarding_completed: bool,
+    /// Register nTorrent as the OS handler for `.torrent` files and
+    /// `magnet:` links. Applied (and self-healed, in case the app binary
+    /// moved) every time settings are saved and once on launch.
+    pub file_associations_enabled: bool,
     pub theme: ThemeMode,
     /// None = use the OS Downloads folder.
     pub download_dir: Option<String>,
@@ -107,6 +111,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             onboarding_completed: false,
+            file_associations_enabled: false,
             theme: ThemeMode::default(),
             download_dir: None,
             bind_interface: None,

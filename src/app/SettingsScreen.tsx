@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { IconButton, Row, Section, TextInput, ToggleSwitch } from "../components/FormKit";
 import { interfaceLabel } from "../lib/network";
-import { listNetworkInterfaces } from "../lib/tauri-bridge";
+import { fileAssociationsSupported, listNetworkInterfaces } from "../lib/tauri-bridge";
 import { useSettingsStore } from "../stores/settings";
 import type { NetworkInterfaceInfo, PortmapProvider, ScheduleRule, ThemeMode } from "../lib/types";
 
@@ -109,6 +109,37 @@ function ScheduleEditor() {
   );
 }
 
+function FileAssociationsSection() {
+  const settings = useSettingsStore((s) => s.settings);
+  const update = useSettingsStore((s) => s.update);
+  const [supported, setSupported] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fileAssociationsSupported()
+      .then(setSupported)
+      .catch(() => setSupported(false));
+  }, []);
+
+  return (
+    <Section title="File associations">
+      <Row
+        label="Open .torrent files and magnet links with nTorrent"
+        hint={
+          supported === false
+            ? "Not available on this platform yet — set nTorrent as the default .torrent/magnet handler from your OS settings instead."
+            : "Double-clicking a .torrent file or a magnet link will open and add it here."
+        }
+      >
+        <ToggleSwitch
+          checked={settings.file_associations_enabled}
+          disabled={supported === false}
+          onChange={(v) => void update({ file_associations_enabled: v })}
+        />
+      </Row>
+    </Section>
+  );
+}
+
 export function SettingsScreen() {
   const settings = useSettingsStore((s) => s.settings);
   const update = useSettingsStore((s) => s.update);
@@ -155,6 +186,8 @@ export function SettingsScreen() {
           />
         </Row>
       </Section>
+
+      <FileAssociationsSection />
 
       <Section title="Bandwidth">
         <Row label="Download limit" hint="KB/s, blank = unlimited">

@@ -151,6 +151,7 @@ export interface NetworkInterfaceInfo {
 
 export interface Settings {
   onboarding_completed: boolean;
+  file_associations_enabled: boolean;
   theme: ThemeMode;
   download_dir: string | null;
   bind_interface: string | null;

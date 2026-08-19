@@ -211,3 +211,10 @@ export function setSettings(settings: Settings) {
     ? invoke<void>("set_settings", { settings })
     : http<void>("/settings", { method: "PUT", body: JSON.stringify(settings) });
 }
+
+/** Whether this OS supports registering .torrent/magnet: associations at runtime (Windows, Linux). */
+export function fileAssociationsSupported() {
+  return IS_TAURI
+    ? invoke<boolean>("file_associations_supported")
+    : http<boolean>("/file-associations/supported");
+}

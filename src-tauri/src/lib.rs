@@ -1,5 +1,6 @@
 mod commands;
 mod engine;
+mod file_assoc;
 mod portmap;
 mod rss;
 mod scheduler;
@@ -9,16 +10,59 @@ mod web_ui;
 
 use std::sync::Arc;
 
+use librqbit::Api;
 use tauri::Manager;
+use tauri_plugin_deep_link::DeepLinkExt;
 use tokio::sync::broadcast;
 
+use commands::torrents::AddTorrentInput;
 use portmap::manager::PortMapManager;
 use settings::SettingsStore;
 use web_ui::WebUiHandle;
 
+/// Adds a torrent handed to us by the OS (a `.torrent` file path from a file
+/// association, or a `magnet:` link from the deep-link handler) — used for
+/// both a cold start with such an argument and a second-instance launch
+/// that got forwarded to the already-running app.
+fn spawn_add_external(api: Api, settings_store: Arc<SettingsStore>, input: AddTorrentInput) {
+    tauri::async_runtime::spawn(async move {
+        let download_dir = settings_store.get().await.download_dir;
+        let opts = commands::torrents::build_add_options(download_dir, false, false, None);
+        match commands::torrents::resolve_add_torrent(input).await {
+            Ok(add) => {
+                if let Err(e) = api.api_add_torrent(add, Some(opts)).await {
+                    tracing::warn!("failed to add torrent from OS association: {e:#}");
+                }
+            }
+            Err(e) => tracing::warn!("failed to read torrent from OS association: {e}"),
+        }
+    });
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // Must be the first plugin registered: a second launch (e.g. from
+        // double-clicking a .torrent file while nTorrent is already open)
+        // gets forwarded here and the new process exits immediately.
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+            if let Some(path) = file_assoc::extract_torrent_path(&args) {
+                let state = app.state::<state::AppState>();
+                spawn_add_external(
+                    state.api.clone(),
+                    state.settings.clone(),
+                    AddTorrentInput::Path { path },
+                );
+            }
+            // magnet: links in `args` are handled by the "deep-link" feature
+            // of this plugin, which forwards them to the deep-link plugin's
+            // on_open_url handler registered in setup() below.
+        }))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let handle = app.handle().clone();
@@ -58,6 +102,7 @@ pub fn run() {
                     let (stats_tx, _) = broadcast::channel(8);
 
                     if let Err(e) = commands::settings::apply_settings(
+                        &handle,
                         &api,
                         &settings_store,
                         &portmap,
@@ -86,6 +131,34 @@ pub fn run() {
                 stats_tx,
             });
 
+            // magnet: links — both a cold start with one on the command line
+            // and a forwarded second-instance launch (see the single-instance
+            // plugin above) surface here as a `deep-link://new-url` event.
+            {
+                let handle_for_urls = handle.clone();
+                app.deep_link().on_open_url(move |event| {
+                    let state = handle_for_urls.state::<state::AppState>();
+                    for url in event.urls() {
+                        spawn_add_external(
+                            state.api.clone(),
+                            state.settings.clone(),
+                            AddTorrentInput::Uri { uri: url.to_string() },
+                        );
+                    }
+                });
+            }
+
+            let cold_start_args: Vec<String> = std::env::args().collect();
+            app.deep_link().handle_cli_arguments(cold_start_args.iter());
+            if let Some(path) = file_assoc::extract_torrent_path(&cold_start_args) {
+                let state = app.state::<state::AppState>();
+                spawn_add_external(
+                    state.api.clone(),
+                    state.settings.clone(),
+                    AddTorrentInput::Path { path },
+                );
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -103,6 +176,7 @@ pub fn run() {
             commands::vpn::list_network_interfaces,
             commands::settings::get_settings,
             commands::settings::set_settings,
+            file_assoc::file_associations_supported,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

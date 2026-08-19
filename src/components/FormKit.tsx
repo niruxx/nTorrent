@@ -33,15 +33,18 @@ export function Row({
 export function ToggleSwitch({
   checked,
   onChange,
+  disabled,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <Switch.Root
       checked={checked}
       onCheckedChange={onChange}
-      className="relative h-6 w-10 rounded-full bg-subtle transition-colors data-[state=checked]:bg-accent-blue"
+      disabled={disabled}
+      className="relative h-6 w-10 rounded-full bg-subtle transition-colors data-[state=checked]:bg-accent-blue disabled:cursor-not-allowed disabled:opacity-40"
     >
       <Switch.Thumb className="block size-4 translate-x-1 rounded-full bg-white shadow-card transition-transform will-change-transform data-[state=checked]:translate-x-5" />
     </Switch.Root>

@@ -4,6 +4,7 @@ import type { Settings, ThemeMode } from "../lib/types";
 
 const DEFAULT_SETTINGS: Settings = {
   onboarding_completed: false,
+  file_associations_enabled: false,
   theme: "system",
   download_dir: null,
   bind_interface: null,
