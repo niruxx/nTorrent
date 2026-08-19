@@ -1,0 +1,159 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap");
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, monospace;
+
+  /* Google-esque accent palette — constant across themes */
+  --color-accent-blue: #4285f4;
+  --color-accent-blue-dark: #1a73e8;
+  --color-accent-red: #ea4335;
+  --color-accent-yellow: #fbbc04;
+  --color-accent-green: #34a853;
+
+  /* Semantic surface/text tokens — values swapped under .dark below,
+     so components just use bg-surface / text-primary etc. and never
+     need a dark: prefix for basic theming. */
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f1f3f4;
+  --color-surface-sidebar: #f8f9fa;
+  --color-surface-elevated: #ffffff;
+  --color-surface-hover: #f1f3f4;
+  --color-subtle: #e8eaed;
+  --color-ink: #202124;
+  --color-ink-muted: #5f6368;
+
+  --radius-card: 1rem;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 1px 3px 1px rgb(0 0 0 / 0.08);
+  --shadow-card-hover: 0 2px 6px 2px rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.08);
+  --shadow-overlay: 0 8px 24px 4px rgb(0 0 0 / 0.2), 0 2px 6px 0 rgb(0 0 0 / 0.12);
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+}
+
+.dark {
+  --color-surface: #202124;
+  --color-surface-sunken: #17181a;
+  --color-surface-sidebar: #171717;
+  --color-surface-elevated: #292a2d;
+  --color-surface-hover: #35363a;
+  --color-subtle: #3c4043;
+  --color-ink: #e8eaed;
+  --color-ink-muted: #9aa0a6;
+
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 1px 3px 1px rgb(0 0 0 / 0.24);
+  --shadow-card-hover: 0 2px 6px 2px rgb(0 0 0 / 0.32), 0 1px 2px 0 rgb(0 0 0 / 0.28);
+  --shadow-overlay: 0 8px 24px 4px rgb(0 0 0 / 0.5), 0 2px 6px 0 rgb(0 0 0 / 0.4);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-surface-sunken);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  transition: background-color 0.25s var(--ease-standard), color 0.25s var(--ease-standard);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent-blue) 30%, transparent);
+}
+
+.material-symbols-rounded {
+  font-family: "Material Symbols Rounded";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+.dialog-overlay {
+  animation: overlay-out 0.15s var(--ease-standard) forwards;
+}
+.dialog-overlay[data-state="open"] {
+  animation: overlay-in 0.18s var(--ease-standard) forwards;
+}
+.dialog-content {
+  animation: content-out 0.15s var(--ease-standard) forwards;
+}
+.dialog-content[data-state="open"] {
+  animation: content-in 0.2s var(--ease-emphasized) forwards;
+}
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes content-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes content-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

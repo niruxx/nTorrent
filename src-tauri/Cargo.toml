@@ -1,0 +1,43 @@
+[package]
+name = "ntorrent"
+version = "0.1.0"
+description = "A beautiful, full-featured BitTorrent client"
+authors = ["you"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "ntorrent_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+librqbit = { version = "9.0.0", features = ["webui", "http-api", "tracing-subscriber-utils"] }
+tokio = { version = "1.53.1", features = ["rt", "time", "sync", "macros", "fs"] }
+anyhow = "1.0.104"
+thiserror = "2.0.20"
+tracing = "0.1.44"
+tracing-subscriber = "0.3.23"
+igd-next = { version = "0.17.1", features = ["aio_tokio"] }
+default-net = "0.22.0"
+reqwest = { version = "0.13.4", default-features = false, features = ["json", "rustls"] }
+base64 = "0.23.1"
+librqbit-dualstack-sockets = "0.7.0"
+chrono = "0.4.45"
+rss = "2.1.0"
+regex = "1.13.1"
+axum = { version = "0.8.9", features = ["ws"] }
+rust-embed = "8.12.0"
+mime_guess = "2.0.5"
+rand = "0.10.2"
+
