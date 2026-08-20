@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
+import { useT } from "../lib/useT";
 
 export function ConfirmRemoveDialog({
   name,
@@ -11,6 +12,7 @@ export function ConfirmRemoveDialog({
   onKeepFiles: () => void;
   onDeleteFiles: () => void;
 }) {
+  const t = useT();
   return (
     <AnimatePresence>
       <motion.div
@@ -28,7 +30,9 @@ export function ConfirmRemoveDialog({
           onClick={(e) => e.stopPropagation()}
           className="w-full max-w-sm rounded-card bg-surface-elevated p-5 shadow-overlay"
         >
-          <h3 className="text-base font-medium text-ink">Remove "{name}"?</h3>
+          <h3 className="text-base font-medium text-ink">
+            {t("confirm_remove_title")} <span className="font-normal text-ink-muted">"{name}"</span>
+          </h3>
           <p className="mt-1 text-sm text-ink-muted">
             You can remove it from the list, or also delete the downloaded files from disk.
           </p>
@@ -37,19 +41,19 @@ export function ConfirmRemoveDialog({
               onClick={onCancel}
               className="rounded-full px-4 py-2 text-sm font-medium text-ink-muted hover:bg-surface-hover"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               onClick={onKeepFiles}
               className="rounded-full px-4 py-2 text-sm font-medium text-ink hover:bg-surface-hover"
             >
-              Remove
+              {t("confirm_remove_keep_files")}
             </button>
             <button
               onClick={onDeleteFiles}
               className="rounded-full bg-accent-red px-4 py-2 text-sm font-medium text-white hover:opacity-90"
             >
-              Delete files
+              {t("confirm_remove_delete_files")}
             </button>
           </div>
         </motion.div>

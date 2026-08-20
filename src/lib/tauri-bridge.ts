@@ -4,9 +4,14 @@ import { getStoredToken, notifyUnauthorized } from "./auth-token";
 import { subscribeWs } from "./ws-bridge";
 import type {
   ApiAddTorrentResponse,
+  CreateTorrentRequest,
+  CreateTorrentResponse,
+  DiskSpaceInfo,
   NetworkInterfaceInfo,
+  PeerInfo,
   PortMapStatus,
   Settings,
+  StatsResponse,
   TorrentDetailsResponse,
   TorrentIdOrHash,
   TorrentListResponse,
@@ -129,6 +134,12 @@ export function getTorrentTrackers(id: TorrentIdOrHash) {
     : http<string[]>(`/torrents/${idPath(id)}/trackers`);
 }
 
+export function getTorrentPeers(id: TorrentIdOrHash) {
+  return IS_TAURI
+    ? invoke<PeerInfo[]>("get_torrent_peers", { id })
+    : http<PeerInfo[]>(`/torrents/${idPath(id)}/peers`);
+}
+
 export function pauseTorrent(id: TorrentIdOrHash) {
   return IS_TAURI
     ? invoke<void>("pause_torrent", { id })
@@ -217,4 +228,34 @@ export function fileAssociationsSupported() {
   return IS_TAURI
     ? invoke<boolean>("file_associations_supported")
     : http<boolean>("/file-associations/supported");
+}
+
+// --- Stats ---
+
+export function getSessionStats() {
+  return IS_TAURI ? invoke<StatsResponse>("get_session_stats") : http<StatsResponse>("/stats");
+}
+
+export function getDiskSpace() {
+  return IS_TAURI
+    ? invoke<DiskSpaceInfo>("get_disk_space")
+    : http<DiskSpaceInfo>("/system/disk-space");
+}
+
+/** Base64-encoded favicon bytes for a tracker's host. */
+export function getTrackerFavicon(trackerUrl: string) {
+  return IS_TAURI
+    ? invoke<string>("get_tracker_favicon", { trackerUrl })
+    : http<string>(`/trackers/favicon?tracker_url=${encodeURIComponent(trackerUrl)}`);
+}
+
+// --- Torrent creation ---
+
+export function createTorrentFile(req: CreateTorrentRequest) {
+  return IS_TAURI
+    ? invoke<CreateTorrentResponse>("create_torrent_file", { req })
+    : http<CreateTorrentResponse>("/torrents/create", {
+        method: "POST",
+        body: JSON.stringify(req),
+      });
 }

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { MainContent } from "./app/MainContent";
 import { Shell } from "./app/Shell";
 import { AddTorrentDialog } from "./components/AddTorrentDialog";
+import { BackgroundLayer } from "./components/BackgroundLayer";
+import { CreateTorrentDialog } from "./components/CreateTorrentDialog";
 import { DetailOverlay } from "./components/DetailOverlay";
 import { OnboardingScreen } from "./components/OnboardingScreen";
 import { Snackbar } from "./components/Snackbar";
@@ -51,11 +53,13 @@ function App() {
 
   return (
     <>
+      <BackgroundLayer />
       <Shell>
         <MainContent />
       </Shell>
       <DetailOverlay />
       <AddTorrentDialog />
+      <CreateTorrentDialog />
       <Snackbar />
     </>
   );

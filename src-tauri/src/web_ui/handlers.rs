@@ -11,7 +11,9 @@ use librqbit::api::{
 use librqbit::TorrentStats;
 use serde::{Deserialize, Serialize};
 
-use crate::commands::torrents::{AddTorrentInput, build_add_options, resolve_add_torrent};
+use crate::commands::create::{CreateTorrentRequest, CreateTorrentResponse};
+use crate::commands::stats::StatsResponse;
+use crate::commands::torrents::{AddTorrentInput, PeerInfo};
 use crate::commands::vpn::NetworkInterfaceInfo;
 use crate::portmap::PortMapStatus;
 use crate::settings::Settings;
@@ -70,15 +72,17 @@ pub async fn add_torrent(
     State(state): State<WebState>,
     Json(body): Json<AddTorrentBody>,
 ) -> Result<Json<ApiAddTorrentResponse>, ApiErr> {
-    let add = resolve_add_torrent(body.input).await.map_err(bad_request)?;
-    let output_folder = state.settings.get().await.download_dir;
-    let opts = build_add_options(output_folder, body.paused, body.list_only, body.only_files);
-    state
-        .api
-        .api_add_torrent(add, Some(opts))
-        .await
-        .map(Json)
-        .map_err(bad_request)
+    crate::commands::torrents::add_torrent_impl(
+        &state.api,
+        &state.settings,
+        body.input,
+        body.paused,
+        body.list_only,
+        body.only_files,
+    )
+    .await
+    .map(Json)
+    .map_err(bad_request)
 }
 
 pub async fn get_torrent_trackers(
@@ -88,6 +92,55 @@ pub async fn get_torrent_trackers(
     let id = parse_id(&id)?;
     let handle = state.api.mgr_handle(id).map_err(bad_request)?;
     Ok(Json(handle.shared().trackers.iter().map(|u| u.to_string()).collect()))
+}
+
+pub async fn get_torrent_peers(
+    State(state): State<WebState>,
+    Path(id): Path<String>,
+) -> Result<Json<Vec<PeerInfo>>, ApiErr> {
+    let id = parse_id(&id)?;
+    crate::commands::torrents::get_torrent_peers_impl(&state.api, &state.settings, id)
+        .await
+        .map(Json)
+        .map_err(bad_request)
+}
+
+#[derive(Deserialize)]
+pub struct FaviconQuery {
+    pub tracker_url: String,
+}
+
+pub async fn get_tracker_favicon(
+    State(state): State<WebState>,
+    Query(q): Query<FaviconQuery>,
+) -> Result<Json<String>, ApiErr> {
+    crate::commands::favicon::get_tracker_favicon_impl(&state.settings, q.tracker_url)
+        .await
+        .map(Json)
+        .map_err(bad_request)
+}
+
+pub async fn get_disk_space(
+    State(state): State<WebState>,
+) -> Result<Json<crate::commands::system::DiskSpaceInfo>, ApiErr> {
+    crate::commands::system::get_disk_space_impl(&state.settings).await.map(Json).map_err(bad_request)
+}
+
+pub async fn get_session_stats(State(state): State<WebState>) -> Json<StatsResponse> {
+    let session = state.api.api_session_stats();
+    let settings = state.settings.get().await;
+    Json(StatsResponse {
+        session,
+        alltime_downloaded_bytes: settings.alltime_downloaded_bytes,
+        alltime_uploaded_bytes: settings.alltime_uploaded_bytes,
+    })
+}
+
+pub async fn create_torrent(
+    State(_state): State<WebState>,
+    Json(req): Json<CreateTorrentRequest>,
+) -> Result<Json<CreateTorrentResponse>, ApiErr> {
+    crate::commands::create::create_torrent_impl(req).await.map(Json).map_err(bad_request)
 }
 
 pub async fn pause_torrent(

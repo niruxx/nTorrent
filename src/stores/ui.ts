@@ -10,8 +10,11 @@ export type Section =
   | "network"
   | "rss"
   | "search"
-  | "settings";
+  | "stats"
+  | "settings"
+  | "advanced";
 export type ViewDensity = "comfortable" | "compact";
+export type SortMode = "custom" | "name" | "size" | "progress" | "added";
 
 interface UiState {
   section: Section;
@@ -22,6 +25,9 @@ interface UiState {
 
   density: ViewDensity;
   setDensity: (density: ViewDensity) => void;
+
+  sortMode: SortMode;
+  setSortMode: (mode: SortMode) => void;
 
   selectedIds: Set<string>;
   toggleSelected: (id: string) => void;
@@ -34,6 +40,9 @@ interface UiState {
 
   addDialogOpen: boolean;
   setAddDialogOpen: (open: boolean) => void;
+
+  createDialogOpen: boolean;
+  setCreateDialogOpen: (open: boolean) => void;
 
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -56,6 +65,9 @@ export const useUiStore = create<UiState>((set) => ({
   density: "comfortable",
   setDensity: (density) => set({ density }),
 
+  sortMode: "added",
+  setSortMode: (sortMode) => set({ sortMode }),
+
   selectedIds: new Set(),
   toggleSelected: (id) =>
     set((s) => {
@@ -73,6 +85,9 @@ export const useUiStore = create<UiState>((set) => ({
 
   addDialogOpen: false,
   setAddDialogOpen: (addDialogOpen) => set({ addDialogOpen }),
+
+  createDialogOpen: false,
+  setCreateDialogOpen: (createDialogOpen) => set({ createDialogOpen }),
 
   searchQuery: "",
   setSearchQuery: (searchQuery) => set({ searchQuery }),

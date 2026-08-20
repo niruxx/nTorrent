@@ -111,6 +111,7 @@ export interface PortMapStatus {
 }
 
 export type ThemeMode = "light" | "dark" | "system";
+export type BackgroundAnimation = "none" | "snowfall" | "xmb" | "minimal";
 export type PortmapProvider = "auto" | "pia" | "off";
 
 export interface ScheduleRule {
@@ -140,6 +141,53 @@ export interface SearchProvider {
   url_template: string;
 }
 
+export interface PeerInfo {
+  addr: string;
+  ip: string;
+  port: number;
+  client_name: string | null;
+  state: string;
+  conn_kind: string | null;
+  downloaded_bytes: number;
+  uploaded_bytes: number;
+  hostname: string | null;
+}
+
+export interface SessionCountersSnapshot {
+  fetched_bytes: number;
+  uploaded_bytes: number;
+  blocked_incoming: number;
+  blocked_outgoing: number;
+}
+
+export interface SessionStatsSnapshot {
+  counters: SessionCountersSnapshot;
+  download_speed: Speed;
+  upload_speed: Speed;
+  peers: AggregatePeerStats;
+  uptime_seconds: number;
+  connections: Record<string, unknown>;
+}
+
+export interface StatsResponse extends SessionStatsSnapshot {
+  alltime_downloaded_bytes: number;
+  alltime_uploaded_bytes: number;
+}
+
+export interface CreateTorrentRequest {
+  source_path: string;
+  name: string | null;
+  trackers: string[];
+  piece_length: number | null;
+  output_path: string;
+}
+
+export interface CreateTorrentResponse {
+  info_hash: string;
+  magnet: string;
+  output_path: string;
+}
+
 export interface NetworkInterfaceInfo {
   name: string;
   friendly_name: string | null;
@@ -149,12 +197,24 @@ export interface NetworkInterfaceInfo {
   vpn_hint: string | null;
 }
 
+export type ContentLayout = "original" | "create_subfolder" | "dont_create_subfolder";
+export type TorrentStopCondition = "none" | "metadata_received" | "files_checked";
+export type ProcessMemoryPriority = "normal" | "below_normal" | "idle";
+
 export interface Settings {
   onboarding_completed: boolean;
   file_associations_enabled: boolean;
   theme: ThemeMode;
+  background_animation: BackgroundAnimation;
+  language: string;
+  hide_zero_values: boolean;
+  torrent_order: string[];
+  alltime_downloaded_bytes: number;
+  alltime_uploaded_bytes: number;
   download_dir: string | null;
+  incomplete_download_dir: string | null;
   bind_interface: string | null;
+  listen_port: number | null;
   download_limit_kbps: number | null;
   upload_limit_kbps: number | null;
   schedule_enabled: boolean;
@@ -162,6 +222,53 @@ export interface Settings {
   portmap_provider: PortmapProvider;
   pia_gateway: string | null;
   pia_token: string | null;
+  max_active_downloads: number | null;
+  global_max_connections: number | null;
+  content_layout: ContentLayout;
+  torrent_stop_condition: TorrentStopCondition;
+  delete_torrent_file_after_add: boolean;
+  copy_torrent_files_to: string | null;
+  append_incomplete_extension: boolean;
+  keep_unselected_in_unwanted_folder: boolean;
+  recursive_download_dialog_enabled: boolean;
+  watched_folder: string | null;
+  show_free_space_in_status_bar: boolean;
+  show_external_ip_in_status_bar: boolean;
+
+  dht_enabled: boolean;
+  dht_bootstrap_nodes: string[];
+  pex_enabled: boolean;
+  local_peer_discovery_enabled: boolean;
+  proxy_enabled: boolean;
+  proxy_host: string | null;
+  proxy_port: number | null;
+  proxy_username: string | null;
+  proxy_password: string | null;
+  ip_filter_enabled: boolean;
+  ip_filter_blocklist_url: string | null;
+  ip_filter_allowlist_url: string | null;
+  ip_filter_apply_to_trackers: boolean;
+  rate_limit_exempt_lan_peers: boolean;
+  rate_limit_account_protocol_overhead: boolean;
+
+  torrent_verification_enabled: boolean;
+  process_memory_priority: ProcessMemoryPriority;
+  torrent_filesize_limit_mb: number | null;
+  recheck_on_completion: boolean;
+  refresh_interval_ms: number;
+  resolve_peer_hostnames: boolean;
+  resolve_peer_countries: boolean;
+  confirm_removal_of_all_tags: boolean;
+  confirm_removal_of_tracker_from_all_torrents: boolean;
+  reannounce_on_ip_port_change: boolean;
+  download_tracker_favicon: boolean;
+  enable_speed_graphs: boolean;
+  enable_embedded_tracker: boolean;
+  embedded_tracker_port: number;
+  embedded_tracker_port_forwarding: boolean;
+  enable_mark_of_the_web: boolean;
+  ignore_ssl_errors: boolean;
+
   web_ui_enabled: boolean;
   web_ui_port: number;
   web_ui_bind_all: boolean;
@@ -172,4 +279,9 @@ export interface Settings {
   rss_seen: string[];
   search_providers: SearchProvider[];
   torrent_labels: Record<string, string[]>;
+}
+
+export interface DiskSpaceInfo {
+  available_bytes: number;
+  total_bytes: number;
 }

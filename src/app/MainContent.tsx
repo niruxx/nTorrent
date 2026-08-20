@@ -1,10 +1,12 @@
 import { ReviewFilesScreen } from "../components/ReviewFilesScreen";
 import { TorrentGrid } from "../components/TorrentGrid";
 import { useUiStore } from "../stores/ui";
+import { AdvancedScreen } from "./AdvancedScreen";
 import { NetworkScreen } from "./NetworkScreen";
 import { RssScreen } from "./RssScreen";
 import { SearchScreen } from "./SearchScreen";
 import { SettingsScreen } from "./SettingsScreen";
+import { StatsScreen } from "./StatsScreen";
 
 export function MainContent() {
   const section = useUiStore((s) => s.section);
@@ -15,5 +17,7 @@ export function MainContent() {
   if (section === "settings") return <SettingsScreen />;
   if (section === "rss") return <RssScreen />;
   if (section === "search") return <SearchScreen />;
+  if (section === "stats") return <StatsScreen />;
+  if (section === "advanced") return <AdvancedScreen />;
   return <TorrentGrid />;
 }

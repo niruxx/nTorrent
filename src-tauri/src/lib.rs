@@ -1,11 +1,18 @@
 mod commands;
+mod embedded_tracker;
 mod engine;
 mod file_assoc;
+mod http_client;
+mod motw;
 mod portmap;
+mod process_priority;
+mod queue;
 mod rss;
 mod scheduler;
 mod settings;
 mod state;
+mod stats;
+mod watched_folder;
 mod web_ui;
 
 use std::sync::Arc;
@@ -26,15 +33,11 @@ use web_ui::WebUiHandle;
 /// that got forwarded to the already-running app.
 fn spawn_add_external(api: Api, settings_store: Arc<SettingsStore>, input: AddTorrentInput) {
     tauri::async_runtime::spawn(async move {
-        let download_dir = settings_store.get().await.download_dir;
-        let opts = commands::torrents::build_add_options(download_dir, false, false, None);
-        match commands::torrents::resolve_add_torrent(input).await {
-            Ok(add) => {
-                if let Err(e) = api.api_add_torrent(add, Some(opts)).await {
-                    tracing::warn!("failed to add torrent from OS association: {e:#}");
-                }
-            }
-            Err(e) => tracing::warn!("failed to read torrent from OS association: {e}"),
+        if let Err(e) =
+            commands::torrents::add_torrent_impl(&api, &settings_store, input, false, false, None)
+                .await
+        {
+            tracing::warn!("failed to add torrent from OS association: {e}");
         }
     });
 }
@@ -64,6 +67,7 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let handle = app.handle().clone();
 
@@ -92,7 +96,7 @@ pub fn run() {
                         .unwrap_or(default_download_dir);
 
                     let api =
-                        engine::session::build_api(download_dir, settings.bind_interface.clone())
+                        engine::session::build_api(download_dir, &settings)
                             .await
                             .expect("failed to start torrent engine");
 
@@ -118,9 +122,19 @@ pub fn run() {
                     (settings_store, api, portmap, web_ui, stats_tx)
                 });
 
-            engine::events::spawn_stats_broadcaster(handle.clone(), api.clone(), stats_tx.clone());
+            engine::events::spawn_stats_broadcaster(
+                handle.clone(),
+                api.clone(),
+                settings_store.clone(),
+                stats_tx.clone(),
+            );
             scheduler::spawn(api.clone(), settings_store.clone());
             rss::spawn(api.clone(), settings_store.clone());
+            stats::spawn(api.clone(), settings_store.clone());
+            queue::spawn(api.clone(), settings_store.clone());
+            watched_folder::spawn(api.clone(), settings_store.clone());
+            motw::spawn(api.clone(), settings_store.clone());
+            embedded_tracker::spawn(settings_store.clone());
             portmap.clone().spawn(handle.clone());
 
             app.manage(state::AppState {
@@ -171,11 +185,16 @@ pub fn run() {
             commands::torrents::remove_torrent,
             commands::torrents::set_file_priority,
             commands::torrents::get_torrent_trackers,
+            commands::torrents::get_torrent_peers,
             commands::vpn::get_portmap_status,
             commands::vpn::refresh_portmap,
             commands::vpn::list_network_interfaces,
             commands::settings::get_settings,
             commands::settings::set_settings,
+            commands::stats::get_session_stats,
+            commands::create::create_torrent_file,
+            commands::system::get_disk_space,
+            commands::favicon::get_tracker_favicon,
             file_assoc::file_associations_supported,
         ])
         .run(tauri::generate_context!())

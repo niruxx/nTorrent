@@ -59,6 +59,7 @@ pub async fn apply_settings(
         .map_err(|e| e.to_string())?;
 
     file_assoc::apply(app, settings.file_associations_enabled);
+    crate::process_priority::apply(settings.process_memory_priority);
 
     scheduler::apply_current_limits(api, settings_store).await;
 

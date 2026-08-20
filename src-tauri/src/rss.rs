@@ -27,8 +27,10 @@ async fn poll_once(api: &Api, settings: &SettingsStore) {
 
     let mut newly_seen = Vec::new();
 
+    let http = crate::http_client::build_client(s.ignore_ssl_errors);
+
     for feed in s.rss_feeds.iter().filter(|f| f.enabled) {
-        let items = match fetch_feed(&feed.url).await {
+        let items = match fetch_feed(&http, &feed.url).await {
             Ok(items) => items,
             Err(e) => {
                 tracing::warn!("failed to fetch RSS feed {}: {e:#}", feed.url);
@@ -85,8 +87,8 @@ struct FeedItem {
     guid: Option<String>,
 }
 
-async fn fetch_feed(url: &str) -> anyhow::Result<Vec<FeedItem>> {
-    let bytes = reqwest::get(url).await?.bytes().await?;
+async fn fetch_feed(http: &reqwest::Client, url: &str) -> anyhow::Result<Vec<FeedItem>> {
+    let bytes = http.get(url).send().await?.bytes().await?;
     let channel = rss::Channel::read_from(Cursor::new(&bytes[..]))?;
     Ok(channel
         .items()

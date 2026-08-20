@@ -1,4 +1,4 @@
-import type { Section } from "../stores/ui";
+import type { Section, SortMode } from "../stores/ui";
 import type { TorrentDetailsResponse } from "./types";
 
 export function isFinished(t: TorrentDetailsResponse): boolean {
@@ -46,4 +46,29 @@ export function progressPercent(t: TorrentDetailsResponse): number {
   const stats = t.stats;
   if (!stats || stats.total_bytes <= 0) return 0;
   return (stats.progress_bytes / stats.total_bytes) * 100;
+}
+
+/**
+ * Sorts by the given mode; "custom" and "added" are no-ops here (custom
+ * order is applied separately via `torrent_order` since it isn't a pure
+ * function of the torrent's own data — see `TorrentGrid`).
+ */
+export function sortTorrents(
+  torrents: TorrentDetailsResponse[],
+  mode: SortMode,
+): TorrentDetailsResponse[] {
+  switch (mode) {
+    case "name":
+      return [...torrents].sort((a, b) =>
+        (a.name ?? a.info_hash).localeCompare(b.name ?? b.info_hash),
+      );
+    case "size":
+      return [...torrents].sort(
+        (a, b) => (b.stats?.total_bytes ?? 0) - (a.stats?.total_bytes ?? 0),
+      );
+    case "progress":
+      return [...torrents].sort((a, b) => progressPercent(b) - progressPercent(a));
+    default:
+      return torrents;
+  }
 }

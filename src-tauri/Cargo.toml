@@ -42,8 +42,15 @@ mime_guess = "2.0.5"
 rand = "0.10.2"
 tauri-plugin-single-instance = { version = "2.4.3", features = ["deep-link"] }
 tauri-plugin-deep-link = "2.4.9"
+tauri-plugin-dialog = "2.7.2"
+fs4 = "1.1.0"
+url = "2.5.8"
+dns-lookup = "3.0.1"
+librqbit-bencode = "9.0.0"
+percent-encoding = "2.3.2"
 
 [target."cfg(windows)".dependencies]
 dunce = "1.0.5"
+windows = { version = "0.62.2", features = ["Win32_System_Threading", "Win32_Foundation"] }
 winreg = "0.56.0"
 

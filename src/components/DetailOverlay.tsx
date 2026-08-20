@@ -2,16 +2,17 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { formatBytes, formatEta, formatSpeed } from "../lib/format";
 import { isPaused, progressPercent } from "../lib/torrent-filters";
-import { getTorrentDetails, getTorrentTrackers } from "../lib/tauri-bridge";
+import { getTorrentDetails, getTorrentTrackers, getTrackerFavicon } from "../lib/tauri-bridge";
 import type { TorrentDetailsResponse, TorrentDetailsResponseFile } from "../lib/types";
 import { useSettingsStore } from "../stores/settings";
 import { useSnackbarStore } from "../stores/snackbar";
 import { type SpeedSample, torrentKey, useTorrentsStore } from "../stores/torrents";
 import { useUiStore } from "../stores/ui";
 import { ConfirmRemoveDialog } from "./ConfirmRemoveDialog";
+import { PeersPanel } from "./PeersPanel";
 import { SpeedSparkline } from "./SpeedSparkline";
 
-type Tab = "files" | "trackers";
+type Tab = "files" | "trackers" | "peers";
 
 export function DetailOverlay() {
   const detailId = useUiStore((s) => s.detailId);
@@ -83,9 +84,14 @@ function DrawerContent({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const hideZero = useSettingsStore((s) => s.settings.hide_zero_values);
+  const showSpeedGraphs = useSettingsStore((s) => s.settings.enable_speed_graphs);
   const percent = progressPercent(torrent);
   const paused = isPaused(torrent);
   const files = details?.files ?? [];
+  const downSpeed = torrent.stats?.live?.download_speed.mbps ?? 0;
+  const upSpeed = torrent.stats?.live?.upload_speed.mbps ?? 0;
+  const livePeers = torrent.stats?.live?.snapshot.peer_stats.live ?? 0;
 
   async function toggleFile(index: number) {
     if (!details?.files) return;
@@ -175,19 +181,21 @@ function DrawerContent({
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Stat
               label="Download"
-              value={formatSpeed((torrent.stats?.live?.download_speed.mbps ?? 0) * 1024 * 1024)}
+              value={hideZero && downSpeed === 0 ? "—" : formatSpeed(downSpeed * 1024 * 1024)}
             />
             <Stat
               label="Upload"
-              value={formatSpeed((torrent.stats?.live?.upload_speed.mbps ?? 0) * 1024 * 1024)}
+              value={hideZero && upSpeed === 0 ? "—" : formatSpeed(upSpeed * 1024 * 1024)}
             />
-            <Stat label="Peers" value={String(torrent.stats?.live?.snapshot.peer_stats.live ?? 0)} />
+            <Stat label="Peers" value={hideZero && livePeers === 0 ? "—" : String(livePeers)} />
             <Stat label="ETA" value={formatEta(torrent.stats?.live?.time_remaining?.duration.secs)} />
           </div>
 
-          <div className="mt-6">
-            <SpeedSparkline samples={history} />
-          </div>
+          {showSpeedGraphs && (
+            <div className="mt-6">
+              <SpeedSparkline samples={history} />
+            </div>
+          )}
 
           <div className="mt-6">
             <LabelEditor infoHash={torrent.info_hash} />
@@ -211,10 +219,19 @@ function DrawerContent({
               >
                 Trackers{trackers && trackers.length > 0 ? ` (${trackers.length})` : ""}
               </button>
+              <button
+                onClick={() => setTab("peers")}
+                className={`flex-1 rounded-full py-1.5 text-sm font-medium transition-colors ${
+                  tab === "peers" ? "bg-surface-elevated text-ink shadow-card" : "text-ink-muted"
+                }`}
+              >
+                Peers
+              </button>
             </div>
 
             <div className="mt-3">
-              {tab === "files" ? (
+              {tab === "peers" && <PeersPanel id={id} active={tab === "peers"} />}
+              {tab === "files" && (
                 <div className="divide-y divide-subtle rounded-card border border-subtle">
                   {files.length === 0 && (
                     <p className="px-4 py-3 text-sm text-ink-muted">Loading files…</p>
@@ -237,7 +254,8 @@ function DrawerContent({
                     </label>
                   ))}
                 </div>
-              ) : (
+              )}
+              {tab === "trackers" && (
                 <div className="divide-y divide-subtle rounded-card border border-subtle">
                   {trackers === null && (
                     <p className="px-4 py-3 text-sm text-ink-muted">Loading trackers…</p>
@@ -245,14 +263,7 @@ function DrawerContent({
                   {trackers?.length === 0 && (
                     <p className="px-4 py-3 text-sm text-ink-muted">No trackers — DHT/PEX only.</p>
                   )}
-                  {trackers?.map((url) => (
-                    <div key={url} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                      <span className="material-symbols-rounded text-[16px] text-ink-muted">dns</span>
-                      <span className="min-w-0 flex-1 truncate font-mono text-xs text-ink" title={url}>
-                        {url}
-                      </span>
-                    </div>
-                  ))}
+                  {trackers?.map((url) => <TrackerRow key={url} url={url} />)}
                 </div>
               )}
             </div>
@@ -281,7 +292,9 @@ function LabelEditor({ infoHash }: { infoHash: string }) {
   const labels = useSettingsStore((s) => s.settings.torrent_labels[infoHash] ?? EMPTY_LABELS);
   const update = useSettingsStore((s) => s.update);
   const allLabels = useSettingsStore((s) => s.settings.torrent_labels);
+  const confirmClearAll = useSettingsStore((s) => s.settings.confirm_removal_of_all_tags);
   const [draft, setDraft] = useState("");
+  const [confirmingClear, setConfirmingClear] = useState(false);
 
   function commit(next: string[]) {
     void update({ torrent_labels: { ...allLabels, [infoHash]: next } });
@@ -294,9 +307,27 @@ function LabelEditor({ infoHash }: { infoHash: string }) {
     setDraft("");
   }
 
+  function clearAll() {
+    if (confirmClearAll) {
+      setConfirmingClear(true);
+    } else {
+      commit([]);
+    }
+  }
+
   return (
     <div>
-      <h3 className="mb-2 text-sm font-medium text-ink">Labels</h3>
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-sm font-medium text-ink">Labels</h3>
+        {labels.length > 0 && (
+          <button
+            onClick={clearAll}
+            className="text-xs font-medium text-ink-muted hover:text-accent-red"
+          >
+            Clear all
+          </button>
+        )}
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         {labels.map((label) => (
           <span
@@ -321,6 +352,62 @@ function LabelEditor({ infoHash }: { infoHash: string }) {
           className="w-28 rounded-full border border-subtle bg-surface px-3 py-1 text-xs text-ink outline-none focus:border-accent-blue"
         />
       </div>
+
+      {confirmingClear && (
+        <div className="mt-3 flex items-center justify-between rounded-card border border-subtle bg-surface-hover px-3 py-2">
+          <p className="text-xs text-ink">Remove all {labels.length} label(s) from this torrent?</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setConfirmingClear(false)}
+              className="rounded-full px-2.5 py-1 text-xs font-medium text-ink-muted hover:bg-surface-elevated"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                commit([]);
+                setConfirmingClear(false);
+              }}
+              className="rounded-full bg-accent-red px-2.5 py-1 text-xs font-medium text-white hover:opacity-90"
+            >
+              Remove all
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TrackerRow({ url }: { url: string }) {
+  const showFavicon = useSettingsStore((s) => s.settings.download_tracker_favicon);
+  const [favicon, setFavicon] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!showFavicon) return;
+    let cancelled = false;
+    getTrackerFavicon(url)
+      .then((b64) => !cancelled && setFavicon(b64))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [url, showFavicon]);
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 text-sm">
+      {favicon ? (
+        <img
+          src={`data:image/x-icon;base64,${favicon}`}
+          alt=""
+          className="size-4 shrink-0 rounded-sm"
+        />
+      ) : (
+        <span className="material-symbols-rounded text-[16px] text-ink-muted">dns</span>
+      )}
+      <span className="min-w-0 flex-1 truncate font-mono text-xs text-ink" title={url}>
+        {url}
+      </span>
     </div>
   );
 }

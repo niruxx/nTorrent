@@ -1,35 +1,40 @@
 import { motion } from "motion/react";
 import { useMemo } from "react";
+import type { TranslationKey } from "../lib/i18n";
+import { useT } from "../lib/useT";
 import { useSettingsStore } from "../stores/settings";
 import { useUiStore, type Section } from "../stores/ui";
 import { Logo } from "./Logo";
 
 interface NavEntry {
   id: Section;
-  label: string;
+  labelKey: TranslationKey;
   icon: string;
 }
 
 const NAV_ITEMS: NavEntry[] = [
-  { id: "library", label: "Library", icon: "grid_view" },
-  { id: "downloading", label: "Downloading", icon: "downloading" },
-  { id: "seeding", label: "Seeding", icon: "upload" },
-  { id: "completed", label: "Completed", icon: "task_alt" },
+  { id: "library", labelKey: "nav_library", icon: "grid_view" },
+  { id: "downloading", labelKey: "nav_downloading", icon: "downloading" },
+  { id: "seeding", labelKey: "nav_seeding", icon: "upload" },
+  { id: "completed", labelKey: "nav_completed", icon: "task_alt" },
 ];
 
 const TOOL_NAV_ITEMS: NavEntry[] = [
-  { id: "search", label: "Search", icon: "travel_explore" },
-  { id: "rss", label: "RSS rules", icon: "rss_feed" },
+  { id: "search", labelKey: "nav_search", icon: "travel_explore" },
+  { id: "rss", labelKey: "nav_rss", icon: "rss_feed" },
 ];
 
 const BOTTOM_NAV_ITEMS: NavEntry[] = [
-  { id: "network", label: "Network & VPN", icon: "vpn_lock" },
-  { id: "settings", label: "Settings", icon: "settings" },
+  { id: "stats", labelKey: "nav_stats", icon: "monitoring" },
+  { id: "network", labelKey: "nav_network", icon: "vpn_lock" },
+  { id: "settings", labelKey: "nav_settings", icon: "settings" },
+  { id: "advanced", labelKey: "nav_advanced", icon: "tune" },
 ];
 
 function NavButton({ item }: { item: NavEntry }) {
   const active = useUiStore((s) => s.section === item.id && s.labelFilter === null);
   const setSection = useUiStore((s) => s.setSection);
+  const t = useT();
 
   return (
     <button
@@ -46,7 +51,7 @@ function NavButton({ item }: { item: NavEntry }) {
         />
       )}
       <span className="material-symbols-rounded relative z-10 text-[20px]">{item.icon}</span>
-      <span className="relative z-10">{item.label}</span>
+      <span className="relative z-10">{t(item.labelKey)}</span>
     </button>
   );
 }

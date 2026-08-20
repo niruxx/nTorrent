@@ -3,7 +3,6 @@ import { Dialog } from "radix-ui";
 import { useEffect, useRef, useState } from "react";
 import { runAddTorrent, type AddTorrentSource } from "../lib/addTorrentSource";
 import { IS_TAURI } from "../lib/tauri-bridge";
-import { useSnackbarStore } from "../stores/snackbar";
 import { useTorrentsStore } from "../stores/torrents";
 import { useUiStore } from "../stores/ui";
 
@@ -17,7 +16,6 @@ export function AddTorrentDialog() {
   const addFromUri = useTorrentsStore((s) => s.addFromUri);
   const addFromBytes = useTorrentsStore((s) => s.addFromBytes);
   const addFromPath = useTorrentsStore((s) => s.addFromPath);
-  const pushSnackbar = useSnackbarStore((s) => s.push);
 
   const [step, setStep] = useState<Step>("input");
   const [mode, setMode] = useState<Mode>("link");
@@ -82,23 +80,6 @@ export function AddTorrentDialog() {
     try {
       const result = await runAddTorrent(actions, source, { listOnly: true });
       if (myRequest !== requestId.current) return;
-      const files = result.details.files ?? [];
-      if (files.length <= 1) {
-        // Nothing meaningful to choose between — just add it now.
-        try {
-          await runAddTorrent(actions, source, {
-            paused: pausedOnAdd,
-            onlyFiles: files.map((_, i) => i),
-          });
-          pushSnackbar("Torrent added");
-          setOpen(false);
-          reset();
-        } catch (e) {
-          pushSnackbar(`Couldn't add torrent: ${String(e)}`);
-          setStep("input");
-        }
-        return;
-      }
       setOpen(false);
       reset();
       openReview(source, result, pausedOnAdd);

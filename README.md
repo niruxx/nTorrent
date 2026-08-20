@@ -10,18 +10,35 @@ Tailwind CSS v4.
 - **Full torrent lifecycle** — magnet links and `.torrent` files, start/pause/resume/remove,
   optional file-by-file selection before a download begins or at any point afterward.
 - **Detail drawer** — click any torrent for a bottom-drawer view with live speed/peer stats, a
-  per-file download picker, and a trackers tab.
+  per-file download picker, a trackers tab (with favicons), and a peers tab with reverse-DNS
+  hostname resolution.
+- **Create torrents** — pick a file or folder, add trackers, choose a piece size, and save the
+  resulting `.torrent`.
 - **VPN-aware port mapping** — tries NAT-PMP/PCP first (works with VPN gateways such as
   ProtonVPN's), then UPnP for home routers, then an optional provider adapter (PIA). The Network
   screen shows the live mapped port, external IP, and mapping history.
 - **Bind-to-interface** — force all torrent traffic through a specific network adapter (e.g. your
   VPN's tunnel interface), with adapters auto-detected and VPN adapters called out separately.
+- **Proxy & IP filtering** — an optional SOCKS5 proxy for peer/tracker traffic, and an optional
+  IP blocklist/allowlist.
+- **Statistics** — live speeds and peer breakdown, this-session totals, and all-time
+  upload/download + share ratio that survives restarts.
+- **An Advanced settings tab** — process priority, refresh interval, DHT bootstrap nodes, an
+  embedded BEP3 tracker, Mark-of-the-Web tagging for downloaded files, and more.
 - **RSS auto-download** — poll feeds and auto-add items matching your own rules.
 - **Pluggable search** — no bundled indexers; add your own search-provider URL templates.
 - **Bandwidth scheduling** — time-of-day upload/download limit rules.
+- **A watched folder**, native `.torrent`/`magnet:` file associations, and per-torrent queueing
+  (cap how many torrents download at once).
 - **Optional remote Web UI** — the same functionality as the desktop app, exposed over
   HTTP/WebSocket with bearer-token auth, toggle on/off from Settings.
-- **Labels**, light/dark theme, and a first-run setup wizard.
+- **Labels**, light/dark theme with animated backgrounds, 4 languages, and a first-run setup
+  wizard.
+
+## Planned features
+
+- **Anonymous mode** — strip client-identifying info from peer/tracker handshakes and disable
+  features that could deanonymize the user when running over a VPN/proxy.
 
 ## Screenshots
 
@@ -29,17 +46,25 @@ Tailwind CSS v4.
 | --- | --- |
 | ![Library view](docs/screenshots/library.png) | ![Torrent detail drawer — files](docs/screenshots/detail-files.png) |
 
-| Trackers | Add a torrent |
+| Trackers | Peers |
 | --- | --- |
-| ![Torrent detail drawer — trackers](docs/screenshots/detail-trackers.png) | ![Add torrent dialog](docs/screenshots/add-dialog.png) |
+| ![Torrent detail drawer — trackers](docs/screenshots/detail-trackers.png) | ![Torrent detail drawer — peers, with reverse-DNS hostnames](docs/screenshots/detail-peers.png) |
 
-| Review files before downloading | Network & VPN |
+| Add a torrent | Review files before downloading |
 | --- | --- |
-| ![Review files screen](docs/screenshots/review-files.png) | ![Network and port mapping screen](docs/screenshots/network.png) |
+| ![Add torrent dialog](docs/screenshots/add-dialog.png) | ![Review files screen](docs/screenshots/review-files.png) |
 
-| Settings |
+| Create a torrent | Statistics |
+| --- | --- |
+| ![Create a torrent dialog](docs/screenshots/create-torrent.png) | ![Statistics screen](docs/screenshots/stats.png) |
+
+| Network & VPN | Settings |
+| --- | --- |
+| ![Network and port mapping screen](docs/screenshots/network.png) | ![Settings screen](docs/screenshots/settings.png) |
+
+| Advanced |
 | --- |
-| ![Settings screen](docs/screenshots/settings.png) |
+| ![Advanced settings screen](docs/screenshots/advanced.png) |
 
 ## Prerequisites
 

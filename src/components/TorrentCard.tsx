@@ -1,7 +1,9 @@
 import { motion } from "motion/react";
 import { useState, type MouseEvent } from "react";
 import { formatBytes, formatSpeed } from "../lib/format";
+import type { TranslationKey } from "../lib/i18n";
 import { isDownloading, isError, isPaused, isSeeding, progressPercent } from "../lib/torrent-filters";
+import { useT } from "../lib/useT";
 import { useSettingsStore } from "../stores/settings";
 import { useSnackbarStore } from "../stores/snackbar";
 import { useTorrentsStore } from "../stores/torrents";
@@ -9,12 +11,14 @@ import { useUiStore } from "../stores/ui";
 import type { TorrentDetailsResponse } from "../lib/types";
 import { ConfirmRemoveDialog } from "./ConfirmRemoveDialog";
 
-function statusFor(t: TorrentDetailsResponse) {
-  if (isError(t)) return { label: "Error", className: "bg-accent-red/12 text-accent-red" };
-  if (isPaused(t)) return { label: "Paused", className: "bg-ink-muted/12 text-ink-muted" };
-  if (isSeeding(t)) return { label: "Seeding", className: "bg-accent-green/12 text-accent-green" };
-  if (isDownloading(t)) return { label: "Downloading", className: "bg-accent-blue/12 text-accent-blue-dark" };
-  return { label: "Queued", className: "bg-ink-muted/12 text-ink-muted" };
+function statusFor(t: TorrentDetailsResponse): { labelKey: TranslationKey; className: string } {
+  if (isError(t)) return { labelKey: "status_error", className: "bg-accent-red/12 text-accent-red" };
+  if (isPaused(t)) return { labelKey: "status_paused", className: "bg-ink-muted/12 text-ink-muted" };
+  if (isSeeding(t))
+    return { labelKey: "status_seeding", className: "bg-accent-green/12 text-accent-green" };
+  if (isDownloading(t))
+    return { labelKey: "status_downloading", className: "bg-accent-blue/12 text-accent-blue-dark" };
+  return { labelKey: "status_queued", className: "bg-ink-muted/12 text-ink-muted" };
 }
 
 function barColor(t: TorrentDetailsResponse) {
@@ -50,6 +54,8 @@ export function TorrentCard({
   const pushSnackbar = useSnackbarStore((s) => s.push);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  const hideZero = useSettingsStore((s) => s.settings.hide_zero_values);
+  const t = useT();
   const selected = selectedIds.has(torrentKey);
   const selectionMode = selectedIds.size > 0;
   const status = statusFor(torrent);
@@ -178,19 +184,19 @@ export function TorrentCard({
 
       <div className="flex items-center justify-between">
         <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${status.className}`}>
-          {status.label}
+          {t(status.labelKey)}
         </span>
         <div className="flex items-center gap-2 text-xs text-ink-muted">
-          {!!downSpeed && (
+          {(!hideZero || !!downSpeed) && (
             <span className="flex items-center gap-0.5">
               <span className="material-symbols-rounded text-[14px]">arrow_downward</span>
-              {formatSpeed(downSpeed * 1024 * 1024)}
+              {formatSpeed((downSpeed ?? 0) * 1024 * 1024)}
             </span>
           )}
-          {!!upSpeed && (
+          {(!hideZero || !!upSpeed) && (
             <span className="flex items-center gap-0.5">
               <span className="material-symbols-rounded text-[14px]">arrow_upward</span>
-              {formatSpeed(upSpeed * 1024 * 1024)}
+              {formatSpeed((upSpeed ?? 0) * 1024 * 1024)}
             </span>
           )}
         </div>
